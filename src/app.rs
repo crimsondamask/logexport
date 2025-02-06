@@ -228,13 +228,19 @@ impl eframe::App for TemplateApp {
                                                     let res_id = row.get::<_, usize>(0).unwrap();
                                                     let res_timestamp =
                                                         row.get::<_, usize>(1).unwrap();
+                                                    let timestamp = Utc
+                                                        .timestamp_opt(res_timestamp as i64, 0)
+                                                        .unwrap()
+                                                        .format("%d/%m/%y,%H:%M:%S")
+                                                        .to_string();
+
                                                     let res_tag = row.get::<_, String>(2).unwrap();
                                                     let res_desc = row.get::<_, String>(3).unwrap();
                                                     let res_value = row.get::<_, f32>(4).unwrap();
                                                     let line = format!(
                                                         "{},{},{},{},{}\n",
                                                         res_id,
-                                                        res_timestamp,
+                                                        timestamp,
                                                         res_tag,
                                                         res_desc,
                                                         res_value
