@@ -157,7 +157,10 @@ impl eframe::App for TemplateApp {
                     ui.end_row();
                     ui.label("Database path");
                     let db_path_name = std::fs::canonicalize(&self.db_path).unwrap();
-                    ui.label(format!("{:?}", &db_path_name.clone().into_os_string()));
+                    ui.label(format!(
+                        "{}",
+                        &db_path_name.clone().into_os_string().into_string().unwrap()
+                    ));
                     ui.end_row();
                     ui.label("Table");
                     ui.text_edit_singleline(&mut self.table_name);
