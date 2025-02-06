@@ -42,8 +42,8 @@ impl Default for TemplateApp {
                 .with_file_name("export.csv"),
             label: "Hello World!".to_owned(),
             table_name: "S7_1200".to_string(),
-            start_date: "01/01/2025".to_string(),
-            end_date: "01/01/2025".to_string(),
+            start_date: "01/01/2025 00:00:00".to_string(),
+            end_date: "01/01/2025 00:00:00".to_string(),
             value: 2.7,
             error_message: "".to_string(),
         }
@@ -174,7 +174,7 @@ impl eframe::App for TemplateApp {
                     }
                     if ui.button("Export").clicked() {
                         let res = rfd::FileDialog::new()
-                            .add_filter("csv", &["txt", "csv"])
+                            .add_filter("csv", &["csv"])
                             .set_directory(&db_path_name.parent().unwrap())
                             .save_file();
 
@@ -282,7 +282,6 @@ impl eframe::App for TemplateApp {
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 powered_by_egui_and_eframe(ui);
-                egui::warn_if_debug_build(ui);
             });
         });
     }
@@ -291,13 +290,5 @@ impl eframe::App for TemplateApp {
 fn powered_by_egui_and_eframe(ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 0.0;
-        ui.label("Powered by ");
-        ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-        ui.label(" and ");
-        ui.hyperlink_to(
-            "eframe",
-            "https://github.com/emilk/egui/tree/master/crates/eframe",
-        );
-        ui.label(".");
     });
 }
