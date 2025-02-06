@@ -1,10 +1,10 @@
 use chrono::prelude::*;
 
-use std::{path::PathBuf, sync::Arc};
+use std::{io::Write, path::PathBuf, str::FromStr, sync::Arc};
 
 use egui::{
-    debug_text::print, style::Selection, Button, Color32, ComboBox, Grid, Label, RichText,
-    Rounding, Slider, Stroke, Vec2, Visuals,
+    debug_text::print, epaint::tessellator::Path, style::Selection, Button, Color32, ComboBox,
+    Grid, Label, RichText, Rounding, Slider, Stroke, Vec2, Visuals,
 };
 use rusqlite::Connection;
 
@@ -17,7 +17,9 @@ use egui_phosphor;
 pub struct TemplateApp {
     // Example stuff:
     label: String,
+    #[serde(skip)] // This how you opt-out of serialization of a field
     db_path: PathBuf,
+    #[serde(skip)] // This how you opt-out of serialization of a field
     export_path: PathBuf,
     start_date: String,
     end_date: String,
@@ -33,7 +35,8 @@ impl Default for TemplateApp {
     fn default() -> Self {
         Self {
             // Example stuff:
-            db_path: std::env::current_dir().unwrap().with_file_name("Logger.db"),
+            //db_path: std::env::current_dir().unwrap().with_file_name("Logger.db"),
+            db_path: PathBuf::from_str("./Logger.db").unwrap(),
             export_path: std::env::current_dir()
                 .unwrap()
                 .with_file_name("export.csv"),
@@ -171,7 +174,7 @@ impl eframe::App for TemplateApp {
                     }
                     if ui.button("Export").clicked() {
                         let res = rfd::FileDialog::new()
-                            .add_filter("TXT", &["txt", "csv"])
+                            .add_filter("csv", &["txt", "csv"])
                             .set_directory(&db_path_name.parent().unwrap())
                             .save_file();
 
@@ -215,11 +218,50 @@ impl eframe::App for TemplateApp {
                                         //);
 
                                         if let Ok(mut rows) = rows {
-                                            while let Some(row) = rows.next().unwrap() {
-                                                let res_timestamp = row.get::<_, usize>(1).unwrap();
-                                                let res_tag = row.get::<_, String>(2).unwrap();
-                                                println!("{} .  {}", res_timestamp, res_tag);
+                                            let mut row_count = 0;
+                                            let file = std::fs::File::options()
+                                                .create(true)
+                                                .append(true)
+                                                .open(&self.export_path);
+                                            if let Ok(mut file) = file {
+                                                while let Some(row) = rows.next().unwrap() {
+                                                    let res_id = row.get::<_, usize>(0).unwrap();
+                                                    let res_timestamp =
+                                                        row.get::<_, usize>(1).unwrap();
+                                                    let res_tag = row.get::<_, String>(2).unwrap();
+                                                    let res_desc = row.get::<_, String>(3).unwrap();
+                                                    let res_value = row.get::<_, f32>(4).unwrap();
+                                                    let line = format!(
+                                                        "{},{},{},{},{}\n",
+                                                        res_id,
+                                                        res_timestamp,
+                                                        res_tag,
+                                                        res_desc,
+                                                        res_value
+                                                    );
+
+                                                    if let Ok(_write_all) =
+                                                        file.write_all(&line.as_bytes())
+                                                    {
+                                                        row_count += 1;
+                                                    } else {
+                                                        self.error_message = format!(
+                                                            "Could not write to file: {:?}",
+                                                            &self.export_path
+                                                        );
+                                                    }
+                                                }
+                                            } else {
+                                                self.error_message = format!(
+                                                    "Could not open or create file: {:?}",
+                                                    &self.export_path
+                                                );
                                             }
+                                            self.error_message =
+                                                format!("{} rows extracted.", row_count);
+                                        } else {
+                                            self.error_message =
+                                                "Error reading database rows.".to_owned();
                                         }
                                     } else {
                                         println!("ERROR");
