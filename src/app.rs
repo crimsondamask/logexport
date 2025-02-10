@@ -222,43 +222,78 @@ impl eframe::App for TemplateApp {
 
                                         if let Ok(mut rows) = rows {
                                             let mut row_count = 0;
+                                            let mut current_timestamp = 0;
                                             let file = std::fs::File::options()
                                                 .create(true)
                                                 .append(true)
                                                 .open(&self.export_path);
                                             if let Ok(mut file) = file {
+                                                let mut line_string = String::new();
                                                 while let Some(row) = rows.next().unwrap() {
                                                     let res_id = row.get::<_, usize>(0).unwrap();
                                                     let res_timestamp =
                                                         row.get::<_, usize>(1).unwrap();
-                                                    let timestamp = Utc
-                                                        .timestamp_opt(res_timestamp as i64, 0)
-                                                        .unwrap()
-                                                        .format("%d/%m/%y,%H:%M:%S")
-                                                        .to_string();
+                                                    // if is_new_line {
 
-                                                    let res_tag = row.get::<_, String>(2).unwrap();
-                                                    let res_desc = row.get::<_, String>(3).unwrap();
-                                                    let res_value = row.get::<_, f32>(4).unwrap();
-                                                    let line = format!(
-                                                        "{},{},{},{},{}\n",
-                                                        res_id,
-                                                        timestamp,
-                                                        res_tag,
-                                                        res_desc,
-                                                        res_value
-                                                    );
+                                                    //  }
 
-                                                    if let Ok(_write_all) =
-                                                        file.write_all(&line.as_bytes())
-                                                    {
-                                                        row_count += 1;
+                                                    if res_timestamp == current_timestamp {
+                                                        
+                                                        let res_value = row.get::<_, f32>(4).unwrap();
+                                                        line_string.push_str(format!("{},", res_value).as_str());
                                                     } else {
-                                                        self.error_message = format!(
-                                                            "Could not write to file: {:?}",
-                                                            &self.export_path
-                                                        );
+
+                                                        let line = format!("{}\r\n", line_string);
+                                                        if let Ok(_write_all) =
+                                                            file.write_all(&line.as_bytes())
+                                                        {
+                                                            row_count += 1;
+                                                        } else {
+                                                            self.error_message = format!(
+                                                                "Could not write to file: {:?}",
+                                                                &self.export_path
+                                                            );
+                                                        }
+                                                        line_string.clear();
+                                                        line_string.push_str(format!("{},", row_count).as_str());
+
+                                                        line_string.push_str(format!("{},", res_timestamp).as_str());
+                                                        let timestamp = Utc
+                                                            .timestamp_opt(res_timestamp as i64, 0)
+                                                            .unwrap()
+                                                            .format("%d/%m/%y,%H:%M:%S,")
+                                                            .to_string();
+                                                        line_string.push_str(timestamp.as_str());
+                                                        let res_value = row.get::<_, f32>(4).unwrap();
+                                                        line_string.push_str(format!("{},", res_value).as_str());
+                                                        current_timestamp = res_timestamp;
+                                                        // is_new_line = false;
                                                     }
+
+
+                                                    // let res_tag = row.get::<_, String>(2).unwrap();
+                                                    // let res_desc = row.get::<_, String>(3).unwrap();
+                                                    // let res_value = row.get::<_, f32>(4).unwrap();
+                                                    // let line = format!(
+                                                    //     "{},{},{},{},{},{}\n",
+                                                    //     res_id,
+                                                    //     res_timestamp,
+                                                    //     timestamp,
+                                                    //     res_tag,
+                                                    //     res_desc,
+                                                    //     res_value
+                                                    // );
+
+                                                    // if let Ok(_write_all) =
+                                                    //     file.write_all(&line.as_bytes())
+                                                    // {
+                                                    //     row_count += 1;
+                                                    // } else {
+                                                    //     self.error_message = format!(
+                                                    //         "Could not write to file: {:?}",
+                                                    //         &self.export_path
+                                                    //     );
+                                                    // }
                                                 }
                                             } else {
                                                 self.error_message = format!(
